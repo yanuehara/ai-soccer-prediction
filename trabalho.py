@@ -12,7 +12,7 @@ class Dataset:
         self.con = sqlite3.connect(filename)
         self.matches = pd.read_sql_query("""
         SELECT season, home_team_goal, away_team_goal, possession, shoton,  home_player_1,  home_player_2,  home_player_3,
- home_player_4,  home_player_5,  home_player_6,  home_player_7,  home_player_8,  home_player_9,  home_player_10
+ home_player_4,  home_player_5,  home_player_6,  home_player_7,  home_player_8,  home_player_9,  home_player_10,
  home_player_11, away_player_1, away_player_2, away_player_3, away_player_4, away_player_5, away_player_6, away_player_7,
  away_player_8, away_player_9, away_player_10, away_player_11, home_player_X1, home_player_X2, home_player_X3,
   home_player_X4, home_player_X5, home_player_X6, home_player_X7, home_player_X8, home_player_X9, home_player_X10,
@@ -39,15 +39,16 @@ WHERE
   home_player_11 IS  NOT NULL AND
 
   away_player_1 IS NOT NULL AND
-  away_player_1 IS NOT NULL AND
-  away_player_1 IS NOT NULL AND
-  away_player_1 IS NOT NULL AND
-  away_player_1 IS NOT NULL AND
-  away_player_1 IS NOT NULL AND
-  away_player_1 IS NOT NULL AND
-  away_player_1 IS NOT NULL AND
-  away_player_1 IS NOT NULL AND
-  away_player_1 IS NOT NULL AND
+  away_player_2 IS NOT NULL AND
+  away_player_3 IS NOT NULL AND
+  away_player_4 IS NOT NULL AND
+  away_player_5 IS NOT NULL AND
+  away_player_6 IS NOT NULL AND
+  away_player_7 IS NOT NULL AND
+  away_player_8 IS NOT NULL AND
+  away_player_9 IS NOT NULL AND
+  away_player_10 IS NOT NULL AND
+  away_player_11 IS NOT NULL AND
 
 
   home_player_X1 IS NOT NULL AND
@@ -101,6 +102,7 @@ WHERE
         """, self.con)
 
     def pre_process(self):
+        #Calculates the target variable
         goals_balance = []
         for goal in self.matches["home_team_goal"] - self.matches["away_team_goal"]:
             if goal<=0:
@@ -112,6 +114,15 @@ WHERE
 
         del self.matches["home_team_goal"]
         del self.matches["away_team_goal"]
+
+
+        #Substitutes the home_team_playerXX and away_team_playerXX for the historical max overall_rating
+        self.player_stats=pd.read_sql_query("SELECT player_api_id, max(overall_rating) as overall_rating FROM Player_Stats GROUP BY player_api_id;", self.con, index_col="player_api_id")
+        for i in range(len(self.matches)):
+            print "Running pre-process for match %s" % i
+            for j in range(1,12):
+                self.matches.loc[i,"home_player_%s" % j] = self.player_stats.loc[self.matches.loc[i,"home_player_%s" % j], "overall_rating"  ]
+
 
 if __name__=="__main__":
     dataset = Dataset("database.sqlite")
