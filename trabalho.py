@@ -2,6 +2,7 @@ import sqlite3
 import xmltodict
 import numpy as np
 import pandas as pd
+from collections import Counter
 
 if pd.__version__ != '0.18.1':
     print "Esse script necessita do pandas == 0.18.1"
@@ -16,7 +17,7 @@ class Dataset:
  home_player_11, away_player_1, away_player_2, away_player_3, away_player_4, away_player_5, away_player_6, away_player_7,
  away_player_8, away_player_9, away_player_10, away_player_11, home_player_X1, home_player_X2, home_player_X3,
   home_player_X4, home_player_X5, home_player_X6, home_player_X7, home_player_X8, home_player_X9, home_player_X10,
-  home_player_X11, home_player_Y1, home_player_Y3, home_player_Y3, home_player_Y4, home_player_Y5, home_player_Y6,
+  home_player_X11, home_player_Y1,home_player_Y2,  home_player_Y3, home_player_Y4, home_player_Y5, home_player_Y6,
   home_player_Y7, home_player_Y8, home_player_Y9, home_player_Y10, home_player_Y11, away_player_X1, away_player_X2,
   away_player_X3, away_player_X4, away_player_X5, away_player_X6, away_player_X7, away_player_X8, away_player_X9,
   away_player_X10, away_player_X11, away_player_Y1, away_player_Y2, away_player_Y3, away_player_Y4, away_player_Y5,
@@ -128,7 +129,35 @@ WHERE
                 self.matches.loc[i, "away_player_%s" % j] = \
                     self.player_stats.loc[self.matches.loc[i, "away_player_%s" % j], "overall_rating"]
 
+    def pre_process_position(self):
+        self.formations = [None] * 2
+        self.formations[0] = list()
+        self.formations[1] = list()
+
+        for i in range(  len(self.matches) ):
+            home_players_y = list()
+            away_players_y = list()
+
+            for j in range(1, 12):
+                home_players_y.append(self.matches.loc[i,'home_player_Y%d' % j])
+                away_players_y.append(self.matches.loc[i,'away_player_Y%d' % j])
+
+            players_y = [home_players_y, away_players_y]
+
+            for i in range(2):
+                formation_dict = Counter(players_y[i])
+                sorted_keys = sorted(formation_dict)
+                formation = ''
+                for key in sorted_keys[1:-1]:
+                    y = formation_dict[key]
+                    formation += '%d-' % y
+                formation += '%d' % formation_dict[sorted_keys[-1]]
+                self.formations[i].append(formation)
+
+            print('Home team formation: ' + self.formations[0][-1])
+            print('Away team formation: ' + self.formations[1][-1])
 
 if __name__=="__main__":
     dataset = Dataset("database.sqlite")
     dataset.pre_process()
+    dataset.pre_process_position()
