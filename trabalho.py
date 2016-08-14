@@ -117,11 +117,16 @@ WHERE
 
 
         #Substitutes the home_team_playerXX and away_team_playerXX for the historical max overall_rating
-        self.player_stats=pd.read_sql_query("SELECT player_api_id, max(overall_rating) as overall_rating FROM Player_Stats GROUP BY player_api_id;", self.con, index_col="player_api_id")
+        self.player_stats=pd.read_sql_query("SELECT player_api_id, max(overall_rating) as overall_rating FROM Player_Stats GROUP BY player_api_id;",
+                                            self.con, index_col="player_api_id")
         for i in range(len(self.matches)):
             print "Running pre-process for match %s" % i
             for j in range(1,12):
-                self.matches.loc[i,"home_player_%s" % j] = self.player_stats.loc[self.matches.loc[i,"home_player_%s" % j], "overall_rating"  ]
+                self.matches.loc[i,"home_player_%s" % j] = \
+                    self.player_stats.loc[self.matches.loc[i,"home_player_%s" % j], "overall_rating"  ]
+            for j in range(1, 12):
+                self.matches.loc[i, "away_player_%s" % j] = \
+                    self.player_stats.loc[self.matches.loc[i, "away_player_%s" % j], "overall_rating"]
 
 
 if __name__=="__main__":
