@@ -132,6 +132,12 @@ WHERE
             print('Home team formation: ' + self.formations[0][-1])
             print('Away team formation: ' + self.formations[1][-1])
 
+        for i in range(1, 12):
+          del self.matches["home_player_Y%s" % i]
+
+        for i in range(1, 12):
+          del self.matches["away_player_Y%s" % i]
+
 if __name__=="__main__":
     dataset = Dataset("database.sqlite")
     dataset.pre_process()
