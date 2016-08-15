@@ -138,7 +138,33 @@ WHERE
         for i in range(1, 12):
           del self.matches["away_player_Y%s" % i]
 
+    def pre_process_possession(self):
+      possession_ = []
+      nullposs = 0
+      for i in range(len(self.matches) ):
+        xml = xmltodict.parse(self.matches.loc[i,"possession"])
+        #print "Runnin possession for game: %d" % i
+
+        if xml["possession"] == None:
+          possession = 50
+          nullposs+=1
+          #continue
+        else:
+          if type(xml["possession"]["value"]) == list:
+            if xml["possession"]["value"][-1].has_key("homepos") == True:
+              possession = xml["possession"]["value"][-1]["homepos"]
+            else:
+              possession = 50
+              nullposs+=1
+          else:
+            possession = xml["possession"]["value"]["homepos"]
+        possession_.append(possession)
+
+      self.matches["possession"] = pd.Series(possession_)
+      self.matches["possession"] = self.matches["possession"].astype(np.int64, copy=True)
+
 if __name__=="__main__":
     dataset = Dataset("database.sqlite")
     dataset.pre_process()
     dataset.pre_process_position()
+    dataset.pre_process_possession()
