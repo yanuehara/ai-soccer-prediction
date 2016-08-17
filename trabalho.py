@@ -12,7 +12,7 @@ class Dataset:
     def __init__(self, filename):
         self.con = sqlite3.connect(filename)
         self.matches = pd.read_sql_query("""
-        SELECT season, home_team_goal, away_team_goal, possession, shoton,
+        SELECT season, home_team_goal, away_team_goal, possession,
         home_player_1,  home_player_2,  home_player_3, home_player_4,  home_player_5,  
         home_player_6,  home_player_7,  home_player_8,  home_player_9,  home_player_10,
         home_player_11,
@@ -25,7 +25,6 @@ class Dataset:
 FROM Match
 WHERE
   possession IS NOT NULL AND
-  shoton IS NOT NULL AND
 
   home_player_1 IS NOT NULL AND
   home_player_2 IS NOT NULL AND
