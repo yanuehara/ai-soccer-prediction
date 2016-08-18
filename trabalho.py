@@ -77,6 +77,12 @@ WHERE
         """, self.con)
 
     def pre_process(self):
+        self.generate_target_classes()
+        self.pre_process_player_stats()
+        self.pre_process_possession()
+        self.pre_process_position()
+
+    def generate_target_classes(self):
         #Calculates the target variable
         goals_balance = []
         for goal in self.matches["home_team_goal"] - self.matches["away_team_goal"]:
@@ -90,18 +96,18 @@ WHERE
         del self.matches["home_team_goal"]
         del self.matches["away_team_goal"]
 
-
+    def pre_process_player_stats(self):
         #Substitutes the home_team_playerXX and away_team_playerXX for the historical max overall_rating
-        self.player_stats=pd.read_sql_query("SELECT player_api_id, max(overall_rating) as overall_rating FROM Player_Stats GROUP BY player_api_id;",
+        player_stats=pd.read_sql_query("SELECT player_api_id, max(overall_rating) as overall_rating FROM Player_Stats GROUP BY player_api_id;",
                                             self.con, index_col="player_api_id")
         for i in range(len(self.matches)):
             print "Running pre-process for match %s" % i
             for j in range(1,12):
                 self.matches.loc[i,"home_player_%s" % j] = \
-                    self.player_stats.loc[self.matches.loc[i,"home_player_%s" % j], "overall_rating"  ]
+                    player_stats.loc[self.matches.loc[i,"home_player_%s" % j], "overall_rating"  ]
             for j in range(1, 12):
                 self.matches.loc[i, "away_player_%s" % j] = \
-                    self.player_stats.loc[self.matches.loc[i, "away_player_%s" % j], "overall_rating"]
+                    player_stats.loc[self.matches.loc[i, "away_player_%s" % j], "overall_rating"]
 
     def pre_process_position(self):
         self.formations = [None] * 2
@@ -142,7 +148,7 @@ WHERE
       nullposs = 0
       for i in range(len(self.matches) ):
         xml = xmltodict.parse(self.matches.loc[i,"possession"])
-        #print "Runnin possession for game: %d" % i
+        #print "Running possession for game: %d" % i
 
         if xml["possession"] == None:
           possession = 50
@@ -165,5 +171,3 @@ WHERE
 if __name__=="__main__":
     dataset = Dataset("database.sqlite")
     dataset.pre_process()
-    dataset.pre_process_position()
-    dataset.pre_process_possession()
