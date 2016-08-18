@@ -3,6 +3,8 @@ import xmltodict
 import numpy as np
 import pandas as pd
 from collections import Counter
+from sklearn.cross_validation import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
 
 if pd.__version__ != '0.18.1':
     print "Esse script necessita do pandas == 0.18.1"
@@ -171,3 +173,12 @@ WHERE
 if __name__=="__main__":
     dataset = Dataset("database.sqlite")
     dataset.pre_process()
+
+    del dataset.matches["season"] #Removing unused column
+    X_train, X_test, y_train, y_test = train_test_split(dataset.matches.drop("goals_balance", axis=1), dataset.matches.loc[:,"goals_balance"]  , test_size=0.3)
+    predictor=KNeighborsClassifier(n_neighbors=11)
+    predictor.fit(X_train, y_train)
+
+    y_pred=predictor.predict(X_test)
+
+    print (y_pred==y_test).value_counts(normalize=True)*100
