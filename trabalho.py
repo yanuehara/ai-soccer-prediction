@@ -3,7 +3,6 @@ import xmltodict
 import numpy as np
 import pandas as pd
 from collections import Counter
-from sklearn.cross_validation import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 
 if pd.__version__ != '0.18.1':
@@ -172,14 +171,18 @@ WHERE
         self.matches["possession"] = pd.Series(possession_)
         self.matches["possession"] = self.matches["possession"].astype(np.int64, copy=True)
 
+    def train_test_split(self):
+        train = self.matches.loc[~self.matches["season"].isin(["2014/2015", "2015/2016"])]
+        test = self.matches.loc[self.matches["season"].isin(["2014/2015", "2015/2016"])]
+
+        return [train.drop(["season", "goals_balance"], axis=1), train.loc[:, "goals_balance"],
+                test.drop(["season", "goals_balance"], axis=1), test.loc[:, "goals_balance"], ]
 
 if __name__ == "__main__":
     dataset = Dataset("database.sqlite")
     dataset.pre_process()
 
-    del dataset.matches["season"]  # Removing unused column
-    X_train, X_test, y_train, y_test = train_test_split(dataset.matches.drop("goals_balance", axis=1),
-                                                        dataset.matches.loc[:, "goals_balance"], test_size=0.3)
+    X_train, y_train, X_test, y_test = dataset.train_test_split()
     predictor = KNeighborsClassifier(n_neighbors=11)
     predictor.fit(X_train, y_train)
 
