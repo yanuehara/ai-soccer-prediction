@@ -3,7 +3,8 @@ import xmltodict
 import numpy as np
 import pandas as pd
 from collections import Counter
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn import preprocessing
 
 if pd.__version__ != '0.18.1':
     print "Esse script necessita do pandas == 0.18.1"
@@ -183,9 +184,9 @@ if __name__ == "__main__":
     dataset.pre_process()
 
     X_train, y_train, X_test, y_test = dataset.train_test_split()
-    predictor = KNeighborsClassifier(n_neighbors=11)
-    predictor.fit(X_train, y_train)
+    clf = SVC()
+    clf.fit( preprocessing.scale(X_train), y_train)
 
-    y_pred = predictor.predict(X_test)
+    y_pred = clf.predict(preprocessing.scale(X_test))
 
     print (y_pred == y_test).value_counts(normalize=True) * 100
