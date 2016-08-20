@@ -141,6 +141,37 @@ WHERE
             print('Home team formation: ' + self.formations[0][-1])
             print('Away team formation: ' + self.formations[1][-1])
 
+        home_formations = pd.Series(self.formations[0])
+        away_formations = pd.Series(self.formations[1])
+
+        formations = dict()
+
+        for index in home_formations.value_counts(ascending=True).index:
+            formations[index] = 0
+
+        for index in away_formations.value_counts(ascending=True).index:
+            if index not in formations.keys():
+                formations[index] = 0
+
+        step = 100 / len(formations)
+        value = step
+
+        for key in formations:
+            formations[key] = value
+            value += step
+
+        h_formations = []
+        a_formations = []
+
+        for formation in home_formations:
+            h_formations.append(formations[formation])
+
+        for formation in away_formations:
+            a_formations.append(formations[formation])
+
+        self.matches["home_formation"] = h_formations
+        self.matches["away_formation"] = a_formations
+
         for i in range(1, 12):
             del self.matches["home_player_Y%s" % i]
 
