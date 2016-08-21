@@ -13,18 +13,16 @@ if pd.__version__ != '0.18.1':
 
 class Dataset:
     def __init__(self, filename):
+        print "Opening database and loading the data"
+
         self.con = sqlite3.connect(filename)
         self.matches = pd.read_sql_query("""
-        SELECT season, home_team_goal, away_team_goal, possession,
+        SELECT season, home_team_goal, away_team_goal,
         home_player_1,  home_player_2,  home_player_3, home_player_4,  home_player_5,  
         home_player_6,  home_player_7,  home_player_8,  home_player_9,  home_player_10,
         home_player_11,
         away_player_1, away_player_2, away_player_3, away_player_4, away_player_5, 
-        away_player_6, away_player_7, away_player_8, away_player_9, away_player_10, away_player_11, 
-        home_player_Y1, home_player_Y2, home_player_Y3, home_player_Y4, home_player_Y5, home_player_Y6,
-        home_player_Y7, home_player_Y8, home_player_Y9, home_player_Y10, home_player_Y11,
-        away_player_Y1, away_player_Y2, away_player_Y3, away_player_Y4, away_player_Y5,
-        away_player_Y6, away_player_Y7, away_player_Y8, away_player_Y9, away_player_Y10, away_player_Y11
+        away_player_6, away_player_7, away_player_8, away_player_9, away_player_10, away_player_11
 FROM Match
 WHERE
   possession IS NOT NULL AND
@@ -79,14 +77,30 @@ WHERE
 ;
         """, self.con)
 
+    # Original select:
+    """
+    SELECT season, home_team_goal, away_team_goal, possession
+    home_player_1,  home_player_2,  home_player_3, home_player_4,  home_player_5,
+    home_player_6,  home_player_7,  home_player_8,  home_player_9,  home_player_10,
+    home_player_11,
+    away_player_1, away_player_2, away_player_3, away_player_4, away_player_5,
+    away_player_6, away_player_7, away_player_8, away_player_9, away_player_10, away_player_11
+    home_player_Y1, home_player_Y2, home_player_Y3, home_player_Y4, home_player_Y5, home_player_Y6,
+    home_player_Y7, home_player_Y8, home_player_Y9, home_player_Y10, home_player_Y11,
+    away_player_Y1, away_player_Y2, away_player_Y3, away_player_Y4, away_player_Y5,
+    away_player_Y6, away_player_Y7, away_player_Y8, away_player_Y9, away_player_Y10, away_player_Y11"""
+
     def pre_process(self):
+        print "Begin pre-process"
         self.generate_target_classes()
         self.pre_process_player_stats()
-        self.pre_process_possession()
-        self.pre_process_position()
+        # self.pre_process_possession()
+        # self.pre_process_position()
+        print "Finished pre-processing"
 
     def generate_target_classes(self):
         # Calculates the target variable
+        print "Generating the target variable"
         goals_balance = []
         for goal in self.matches["home_team_goal"] - self.matches["away_team_goal"]:
             if goal <= 0:
@@ -101,11 +115,12 @@ WHERE
 
     def pre_process_player_stats(self):
         # Substitutes the home_team_playerXX and away_team_playerXX for the historical max overall_rating
+        print "Pre-processing the player stats"
         player_stats = pd.read_sql_query(
             "SELECT player_api_id, max(overall_rating) as overall_rating FROM Player_Stats GROUP BY player_api_id;",
             self.con, index_col="player_api_id")
+
         for i in range(len(self.matches)):
-            print "Running pre-process for match %s" % i
             for j in range(1, 12):
                 self.matches.loc[i, "home_player_%s" % j] = \
                     player_stats.loc[self.matches.loc[i, "home_player_%s" % j], "overall_rating"]
@@ -114,6 +129,7 @@ WHERE
                     player_stats.loc[self.matches.loc[i, "away_player_%s" % j], "overall_rating"]
 
     def pre_process_position(self):
+        print "Pre-processing the positions"
         self.formations = [None] * 2
         self.formations[0] = list()
         self.formations[1] = list()
@@ -179,6 +195,7 @@ WHERE
             del self.matches["away_player_Y%s" % i]
 
     def pre_process_possession(self):
+        print "Pre-processing the possession"
         possession_ = []
         nullposs = 0
         for i in range(len(self.matches)):
@@ -204,6 +221,8 @@ WHERE
         self.matches["possession"] = self.matches["possession"].astype(np.int64, copy=True)
 
     def train_test_split(self):
+        # Split the train and test
+        print "Dividing the train and test"
         train = self.matches.loc[~self.matches["season"].isin(["2014/2015", "2015/2016"])]
         test = self.matches.loc[self.matches["season"].isin(["2014/2015", "2015/2016"])]
 
@@ -215,9 +234,13 @@ if __name__ == "__main__":
     dataset.pre_process()
 
     X_train, y_train, X_test, y_test = dataset.train_test_split()
+
+    print "Instantiating and fitting the SVC classifier"
     clf = SVC()
     clf.fit( preprocessing.scale(X_train), y_train)
 
+    print "Predicting"
     y_pred = clf.predict(preprocessing.scale(X_test))
 
+    print "Prediction results: "
     print (y_pred == y_test).value_counts(normalize=True) * 100
